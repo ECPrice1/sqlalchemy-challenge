@@ -66,34 +66,44 @@ def precipitation():
                         Measurement.date).\
                   filter(Measurement.date > query_date).all()
 
+    # Close session
     session.close()
 
+    # converting results to list using for loop
     recent_measurements = []
     for prcp, date in results:
         measurement_dict = {}
         measurement_dict["date"] = date
         measurement_dict["prcp"] = prcp
         
-        
+        #append list w/ dictionaries
         recent_measurements.append(measurement_dict)
 
+    # return jsonified results to page
     return jsonify(recent_measurements)
 
 @app.route("/api/v1.0/stations")
 def stations():
+    # Create our session (link) from Python to the DB
     session = Session(engine)
 
+    # Query
     results = session.query(Station.station, Station.name).all()
 
+    # Close session
     session.close()
 
+    # converting results to list using for loop
     stations = []
     for station, name in results:
         station_dict = {}
         station_dict["station"] = station
         station_dict["name"] = name
+        
+        #append list w/ dictionaries
         stations.append(station_dict)
     
+    # return jsonified results to page
     return jsonify(stations)
 
 
@@ -102,6 +112,7 @@ def tobs():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
+    # Query
     #date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
     date = dt.date(2017, 8, 23)
     query_date = date - dt.timedelta(days=365)
@@ -110,17 +121,22 @@ def tobs():
     filter(Measurement.station == 'USC00519281').\
     filter(Measurement.date > query_date).all()
 
+    # Close session
     session.close()
 
+    # converting temperatures to list using for loop
     temps = []
     for temp, date in temperatures:
         temps_dict = {}
         temps_dict['date'] = date
         temps_dict['temp'] = temp
 
+        #append list w/ dictionaries
         temps.append(temps_dict)
 
+    # return jsonified results to page
     return jsonify(temps)   
+
 
 
 #@app.route("/api/v1.0/<start>") and @app.route(/api/v1.0/<start>/<end>)
