@@ -1,19 +1,23 @@
 # Import the dependencies.
-from flask import Flask, jsonify
+import numpy as np
+
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
+import datetime as dt
+
+from flask import Flask, jsonify
 
 
 #################################################
 # Database Setup
 #################################################
-
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 Base = automap_base()
+
 # reflect the tables
 Base.prepare(autoload_with=engine)
 
@@ -22,7 +26,7 @@ Station = Base.classes.station
 Measurement = Base.classes.measurement
 
 # Create our session (link) from Python to the DB
-session = Session(bind=engine)
+#session = Session(engine)
 
 #################################################
 # Flask Setup
@@ -37,7 +41,6 @@ app = Flask(__name__)
 
 @app.route("/")
 def welcome():
-    
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
@@ -48,60 +51,83 @@ def welcome():
         f"/api/v1.0/<start>/<end>"
     )
 
-
+    
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     # Query
-    date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    #date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    date = dt.date(2017, 8, 23)
     query_date = date - dt.timedelta(days=365)
     
-    results = session.query(Measurement.prcp, 
+    results = session.query(Measurement.prcp,\
                         Measurement.date).\
                   filter(Measurement.date > query_date).all()
 
     session.close()
 
-    #recent_measurements = []
-    #for prcp, date in results:
-        #measurement_dict = {}
-        #measurement_dict["name"] = name
-        #measurement_dict["age"] = age
+    recent_measurements = []
+    for prcp, date in results:
+        measurement_dict = {}
+        measurement_dict["date"] = date
+        measurement_dict["prcp"] = prcp
         
-        #measurements.append(recent_measurements)
+        
+        recent_measurements.append(measurement_dict)
 
-    #return jsonify(measurements)
+    return jsonify(recent_measurements)
 
-    # Convert list of tuples into normal list
-    #all_names = list(np.ravel(results))
+@app.route("/api/v1.0/stations")
+def stations():
+    session = Session(engine)
 
-    #return jsonify(all_names)
+    results = session.query(Station.station, Station.name).all()
 
-#@app.route("/api/v1.0/stations")
-#session.query(func.count(Station.station)).all()
+    session.close()
 
-#session.query(Measurement.station, func.count(Measurement.station)).\
-    #group_by(Measurement.station).\
-    #order_by(func.count(Measurement.station).desc()).all()
+    stations = []
+    for station, name in results:
+        station_dict = {}
+        station_dict["station"] = station
+        station_dict["name"] = name
+        stations.append(station_dict)
+    
+    return jsonify(stations)
+
 
 @app.route("/api/v1.0/tobs")
 def tobs():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    #date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    date = dt.date(2017, 8, 23)
     query_date = date - dt.timedelta(days=365)
 
-    temperatures = session.query(Measurement.tobs, func.count(Measurement.tobs)).\
+    temperatures = session.query(Measurement.tobs, Measurement.date).\
     filter(Measurement.station == 'USC00519281').\
-    filter(Measurement.date > query_date).\
-    group_by(Measurement.tobs).all()
+    filter(Measurement.date > query_date).all()
+
+    session.close()
+
+    temps = []
+    for temp, date in temperatures:
+        temps_dict = {}
+        temps_dict['date'] = date
+        temps_dict['temp'] = temp
+
+        temps.append(temps_dict)
+
+    return jsonify(temps)   
+
 
 #@app.route("/api/v1.0/<start>") and @app.route(/api/v1.0/<start>/<end>)
 
 #TMIN, TAVG, and TMAX
 
-if __name__ == '__name__':
+
+
+if __name__ == '__main__':
     app.run(debug=True)
